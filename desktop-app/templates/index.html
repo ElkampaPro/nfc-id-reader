@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="واجهة مستخدم لعرض بيانات بطاقات NFC المقروءة من الهاتف المحمول">
-    <title>قارئ بطاقات NFC - لوحة التحكم</title>
+    <meta name="description" content="واجهة مستخدم لعرض بيانات وثائق السفر وجوازات السفر والبطاقات البيومترية المقروءة عبر NFC">
+    <title>مدقق الوثائق البيومترية - لوحة التحكم</title>
     <!-- Google Fonts: Outfit & Readex Pro for Arabic support -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,13 +13,14 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --bg-color: #080710;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --card-border: rgba(255, 255, 255, 0.08);
+            --bg-color: #050508;
+            --card-bg: rgba(255, 255, 255, 0.02);
+            --card-border: rgba(255, 255, 255, 0.06);
             --text-primary: #ffffff;
-            --text-secondary: #a0aec0;
+            --text-secondary: #94a3b8;
             --accent-purple: #8b5cf6;
             --accent-cyan: #06b6d4;
+            --accent-gold: #eab308;
             --accent-green: #10b981;
             --accent-red: #ef4444;
             --font-family: 'Readex Pro', 'Outfit', system-ui, -apple-system, sans-serif;
@@ -45,11 +46,11 @@
         /* Decorative Background Blobs */
         .blob {
             position: absolute;
-            width: 500px;
-            height: 500px;
+            width: 600px;
+            height: 600px;
             border-radius: 50%;
-            filter: blur(150px);
-            opacity: 0.15;
+            filter: blur(180px);
+            opacity: 0.12;
             z-index: -1;
             pointer-events: none;
         }
@@ -63,15 +64,25 @@
             bottom: -10%;
             right: -10%;
         }
+        .blob-gold {
+            background: var(--accent-gold);
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            opacity: 0.05;
+        }
 
         header {
-            padding: 2rem 4rem;
+            padding: 1.5rem 3rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--card-border);
-            background: rgba(8, 7, 16, 0.5);
-            backdrop-filter: blur(12px);
+            background: rgba(5, 5, 8, 0.6);
+            backdrop-filter: blur(15px);
+            z-index: 10;
         }
 
         .logo-section {
@@ -81,17 +92,17 @@
         }
 
         .logo-icon {
-            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
             padding: 0.75rem;
             border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 8px 32px rgba(6, 182, 212, 0.2);
         }
 
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 700;
             background: linear-gradient(to left, var(--text-primary), #cbd5e1);
             -webkit-background-clip: text;
@@ -101,7 +112,7 @@
         .server-status-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            padding: 0.75rem 1.5rem;
+            padding: 0.6rem 1.2rem;
             border-radius: 14px;
             display: flex;
             align-items: center;
@@ -124,22 +135,22 @@
         }
 
         .ip-badge {
-            background: rgba(6, 182, 212, 0.1);
+            background: rgba(6, 182, 212, 0.08);
             color: var(--accent-cyan);
-            border: 1px solid rgba(6, 182, 212, 0.2);
-            padding: 0.25rem 0.75rem;
+            border: 1px solid rgba(6, 182, 212, 0.15);
+            padding: 0.2rem 0.6rem;
             border-radius: 8px;
             font-family: 'Outfit', sans-serif;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             letter-spacing: 0.5px;
             direction: ltr;
         }
 
         main {
             flex: 1;
-            padding: 3rem 4rem;
+            padding: 2.5rem 3rem;
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
+            grid-template-columns: 1.3fr 0.7fr;
             gap: 2.5rem;
             max-width: 1600px;
             width: 100%;
@@ -147,252 +158,308 @@
         }
 
         .section-title {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
             color: var(--text-primary);
+            font-weight: 600;
         }
 
-        /* Glass Panel */
         .panel {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 24px;
             padding: 2rem;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(25px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
             display: flex;
             flex-direction: column;
         }
 
-        /* Live Scanner View */
-        .scanner-view {
+        /* Wait Screen */
+        .wait-screen {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 400px;
+            min-height: 480px;
             text-align: center;
-            position: relative;
         }
 
-        .nfc-animation-container {
+        .biometric-scanner-ring {
             position: relative;
-            width: 180px;
-            height: 180px;
+            width: 190px;
+            height: 190px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 2rem;
         }
 
-        .nfc-ring {
+        .scanner-circle {
             position: absolute;
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            border: 2px dashed rgba(6, 182, 212, 0.3);
-            animation: rotateRing 20s linear infinite;
+            border: 2px dashed rgba(6, 182, 212, 0.2);
+            animation: rotateRing 25s linear infinite;
         }
 
-        .nfc-wave {
+        .scanner-wave {
             position: absolute;
-            width: 70%;
-            height: 70%;
+            width: 80%;
+            height: 80%;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0) 70%);
-            animation: pulseWave 2s infinite ease-in-out;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, rgba(139, 92, 246, 0) 70%);
+            animation: pulseWave 2.5s infinite ease-in-out;
         }
 
-        .nfc-center-icon {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
-            border: 1px solid var(--card-border);
-            padding: 1.5rem;
+        .scanner-face-icon {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(139, 92, 246, 0.08));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1.8rem;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--accent-cyan);
             z-index: 2;
-            box-shadow: 0 8px 32px rgba(6, 182, 212, 0.1);
+            box-shadow: 0 8px 32px rgba(6, 182, 212, 0.05);
         }
 
-        .nfc-center-icon i {
-            width: 48px;
-            height: 48px;
+        .scanner-face-icon i {
+            width: 52px;
+            height: 52px;
         }
 
-        .scanner-status-text {
+        .wait-title {
             font-size: 1.25rem;
             font-weight: 600;
-            color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
 
-        .scanner-hint-text {
+        .wait-subtitle {
             color: var(--text-secondary);
             font-size: 0.95rem;
-            max-width: 320px;
+            max-width: 380px;
+            line-height: 1.6;
         }
 
-        /* Scanned Card Details */
-        .card-details {
+        /* Biometric Verification View */
+        .verification-view {
             display: none;
             width: 100%;
-            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .card-visual {
-            background: linear-gradient(135deg, #1e1b4b 0%, #311042 50%, #0c0a0f 100%);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+        /* Document Template UI */
+        .document-card {
+            background: linear-gradient(135deg, #181528 0%, #0d0c14 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
-            padding: 2rem;
-            aspect-ratio: 1.586 / 1; /* Credit Card Ratio */
+            padding: 1.75rem;
             width: 100%;
-            max-width: 420px;
-            margin: 0 auto 2.5rem;
+            margin-bottom: 2rem;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 1.75rem;
+        }
+
+        .document-card.passport-style {
+            background: linear-gradient(135deg, #2b1118 0%, #15060a 100%);
+            border-color: rgba(234, 179, 8, 0.2);
+        }
+
+        .document-card.passport-style::after {
+            content: 'PASSPORT';
+            position: absolute;
+            bottom: -15px;
+            right: 15px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 4rem;
+            font-weight: 800;
+            color: rgba(234, 179, 8, 0.03);
+            pointer-events: none;
+            letter-spacing: 5px;
+        }
+
+        .document-card.id-style::after {
+            content: 'NATIONAL ID';
+            position: absolute;
+            bottom: -15px;
+            right: 15px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 4rem;
+            font-weight: 800;
+            color: rgba(6, 182, 212, 0.03);
+            pointer-events: none;
+            letter-spacing: 5px;
+        }
+
+        /* Photo Area */
+        .doc-photo-container {
+            width: 140px;
+            height: 180px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .doc-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .passport-style .doc-photo-container {
+            border-color: rgba(234, 179, 8, 0.3);
+        }
+
+        .doc-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .doc-field {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
         }
 
-        .card-visual::before {
-            content: '';
-            position: absolute;
-            top: -20%;
-            right: -20%;
-            width: 60%;
-            height: 60%;
-            background: radial-gradient(circle, rgba(6, 182, 212, 0.4) 0%, rgba(0,0,0,0) 80%);
-            pointer-events: none;
-        }
-
-        .card-header-visual {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-chip {
-            width: 45px;
-            height: 35px;
-            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 50%, #94a3b8 100%);
-            border-radius: 6px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card-chip::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            border: 1px solid rgba(0,0,0,0.2);
-            background-image: 
-                linear-gradient(90deg, transparent 50%, rgba(0,0,0,0.1) 50%),
-                linear-gradient(0deg, transparent 50%, rgba(0,0,0,0.1) 50%);
-            background-size: 10px 10px;
-        }
-
-        .card-nfc-logo {
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .card-id-display {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 600;
-            letter-spacing: 3px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            margin: 1.5rem 0;
-            direction: ltr;
-            text-align: left;
-        }
-
-        .card-footer-visual {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .card-holder-label {
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.4);
+        .field-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
             text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-bottom: 0.25rem;
         }
 
-        .card-holder-value {
-            font-size: 0.95rem;
-            font-weight: 500;
+        .field-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f8fafc;
+            word-break: break-all;
         }
 
-        .card-type-tag {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
+        .field-value.highlight-cyan {
+            color: var(--accent-cyan);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.15rem;
+            letter-spacing: 1px;
+            direction: ltr;
+            text-align: right;
+        }
+
+        .field-value.highlight-gold {
+            color: var(--accent-gold);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.15rem;
+            letter-spacing: 1px;
+            direction: ltr;
+            text-align: right;
+        }
+
+        .doc-header-row {
+            grid-column: span 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .doc-type-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 6px;
             font-size: 0.8rem;
-            font-weight: 600;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        /* Detail List */
-        .info-grid {
+        .passport-style .doc-type-badge {
+            background: rgba(234, 179, 8, 0.1);
+            color: var(--accent-gold);
+            border-color: rgba(234, 179, 8, 0.25);
+        }
+
+        .id-style .doc-type-badge {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+            border-color: rgba(6, 182, 212, 0.25);
+        }
+
+        /* Technical Info Grid */
+        .tech-info-section {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
             width: 100%;
         }
 
-        .info-item {
+        .tech-card {
             background: rgba(255, 255, 255, 0.01);
             border: 1px solid var(--card-border);
-            padding: 1.25rem;
+            padding: 1rem;
             border-radius: 16px;
             transition: all 0.3s ease;
         }
 
-        .info-item:hover {
-            border-color: rgba(6, 182, 212, 0.2);
-            background: rgba(6, 182, 212, 0.01);
+        .tech-card:hover {
+            border-color: rgba(139, 92, 246, 0.2);
+            background: rgba(139, 92, 246, 0.01);
         }
 
-        .info-label {
-            font-size: 0.85rem;
+        .tech-label {
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
         }
 
-        .info-value {
-            font-size: 1.1rem;
+        .tech-value {
+            font-size: 0.95rem;
             font-weight: 600;
-            word-break: break-all;
         }
 
-        .info-value.tech-badge-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .tech-badge {
-            background: rgba(139, 92, 246, 0.15);
-            color: #c084fc;
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            padding: 0.2rem 0.5rem;
+        .tech-value.badge {
+            display: inline-block;
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            padding: 0.15rem 0.5rem;
             border-radius: 6px;
-            font-size: 0.75rem;
-            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
         }
 
-        /* Scan History Section */
+        .tech-value.mrz-raw {
+            grid-column: span 3;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+            padding: 0.75rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            direction: ltr;
+            text-align: left;
+        }
+
+        /* History List */
         .history-panel {
-            max-height: calc(100vh - 160px);
+            max-height: calc(100vh - 140px);
             overflow-y: auto;
         }
 
@@ -406,7 +473,7 @@
         .history-item {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
+            border-radius: 18px;
             padding: 1rem;
             display: flex;
             justify-content: space-between;
@@ -416,67 +483,97 @@
         }
 
         .history-item:hover {
-            border-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.12);
             transform: translateY(-2px);
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04);
         }
 
-        .history-item-left {
+        .history-left {
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
 
-        .history-item-icon {
-            background: rgba(139, 92, 246, 0.1);
-            color: var(--accent-purple);
-            padding: 0.5rem;
-            border-radius: 10px;
+        .history-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .history-item-id {
-            font-family: 'Outfit', sans-serif;
-            font-weight: 600;
-            font-size: 1rem;
+        .history-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .history-item-time {
-            font-size: 0.75rem;
+        .history-avatar i {
             color: var(--text-secondary);
-            margin-top: 0.25rem;
+            width: 20px;
+            height: 20px;
         }
 
-        .history-item-right {
+        .history-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .history-doc-num {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.15rem;
+        }
+
+        .history-right {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
+            gap: 0.4rem;
         }
 
-        .history-item-type {
+        .history-time {
             font-size: 0.75rem;
-            color: var(--accent-cyan);
-            border: 1px solid rgba(6, 182, 212, 0.2);
-            background: rgba(6, 182, 212, 0.05);
-            padding: 0.15rem 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .history-type-tag {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.4rem;
             border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .history-type-tag.passport {
+            background: rgba(234, 179, 8, 0.1);
+            color: var(--accent-gold);
+            border: 1px solid rgba(234, 179, 8, 0.15);
+        }
+
+        .history-type-tag.id {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.15);
         }
 
         .no-history {
             text-align: center;
             color: var(--text-secondary);
-            padding: 3rem 0;
+            padding: 4rem 0;
             font-size: 0.95rem;
         }
 
-        /* Action Buttons */
         .reset-btn {
-            background: linear-gradient(135deg, var(--accent-purple), #7c3aed);
+            background: linear-gradient(135deg, var(--accent-cyan), #0891b2);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
+            padding: 0.75rem 1.75rem;
             border-radius: 12px;
             font-family: var(--font-family);
             font-weight: 600;
@@ -487,12 +584,12 @@
             gap: 0.5rem;
             align-self: center;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
         }
 
         .reset-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.3);
         }
 
         /* Scrollbar Styling */
@@ -503,11 +600,11 @@
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         /* Animations */
@@ -517,13 +614,13 @@
         }
 
         @keyframes pulseWave {
-            0% { transform: scale(0.8); opacity: 0.3; }
-            50% { opacity: 0.8; }
-            100% { transform: scale(1.3); opacity: 0; }
+            0% { transform: scale(0.85); opacity: 0.2; }
+            50% { opacity: 0.7; }
+            100% { transform: scale(1.25); opacity: 0; }
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -542,119 +639,149 @@
                 width: 100%;
                 justify-content: space-between;
             }
+            .document-card {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                text-align: center;
+            }
+            .doc-details-grid {
+                width: 100%;
+            }
+            .field-value.highlight-cyan, .field-value.highlight-gold {
+                text-align: center;
+            }
         }
     </style>
 </head>
 <body>
     <div class="blob blob-purple"></div>
     <div class="blob blob-cyan"></div>
+    <div class="blob blob-gold"></div>
 
     <header>
         <div class="logo-section">
             <div class="logo-icon">
-                <i data-lucide="nfc" style="width: 28px; height: 28px; color: white;"></i>
+                <i data-lucide="scan-face" style="width: 26px; height: 26px; color: white;"></i>
             </div>
             <div>
-                <h1>لوحة تحكم قارئ بطاقات NFC</h1>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">استقبال فوري لبيانات البطاقات الذكية من الهاتف</p>
+                <h1>نظام التحقق من الوثائق البيومترية (ICAO 9303)</h1>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">تشفير، مصادقة وقراءة جوازات السفر والهويات الرسمية عبر الهاتف</p>
             </div>
         </div>
         <div class="server-status-card">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <div id="statusDot" class="status-dot"></div>
-                <span id="statusText" style="font-size: 0.9rem;">غير متصل بالخادم</span>
+                <span id="statusText" style="font-size: 0.85rem;">غير متصل بالخادم</span>
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="font-size: 0.85rem; color: var(--text-secondary);">IP خادم الكمبيوتر:</span>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">IP خادم بايثون:</span>
                 <span id="ipBadge" class="ip-badge">{{ local_ip }}:{{ port }}</span>
             </div>
         </div>
     </header>
 
     <main>
-        <!-- Scanner & Details Section -->
-        <section class="panel" style="justify-content: center; min-height: 500px;">
+        <!-- Scanner Details Screen -->
+        <section class="panel" style="justify-content: center; min-height: 520px;">
             <!-- 1. Wait State -->
-            <div id="scannerWaitState" class="scanner-view">
-                <div class="nfc-animation-container">
-                    <div class="nfc-ring"></div>
-                    <div class="nfc-wave"></div>
-                    <div class="nfc-center-icon">
-                        <i data-lucide="smartphone"></i>
+            <div id="waitState" class="wait-screen">
+                <div class="biometric-scanner-ring">
+                    <div class="scanner-circle"></div>
+                    <div class="scanner-wave"></div>
+                    <div class="scanner-face-icon">
+                        <i data-lucide="fingerprint"></i>
                     </div>
                 </div>
-                <p class="scanner-status-text">بانتظار قراءة بطاقة...</p>
-                <p class="scanner-hint-text">قم بتفعيل الـ NFC في الهاتف، وافتح تطبيق الهاتف، ثم قرب بطاقة الهوية الذكية من خلف الهاتف.</p>
+                <p class="wait-title">بانتظار قراءة وثيقة بيومترية...</p>
+                <p class="wait-subtitle">
+                    افتح تطبيق الهاتف، اختر وضع القراءة (هوية باستخدام CAN أو جواز سفر باستخدام MRZ)، ثم قرّب الوثيقة من الهاتف لقراءة البيانات البيومترية المشفرة.
+                </p>
             </div>
 
-            <!-- 2. Detail Display State -->
-            <div id="scannerDetailState" class="card-details">
-                <h2 class="section-title"><i data-lucide="shield-check" style="color: var(--accent-cyan)"></i> تم قراءة البطاقة بنجاح</h2>
+            <!-- 2. Display Decoded Document Details -->
+            <div id="detailState" class="verification-view">
+                <h2 class="section-title"><i data-lucide="shield-check" style="color: var(--accent-cyan)"></i> تم التحقق من الوثيقة بنجاح</h2>
                 
-                <!-- Credit Card Visual Representation -->
-                <div class="card-visual">
-                    <div class="card-header-visual">
-                        <div class="card-chip"></div>
-                        <div class="card-nfc-logo">
-                            <i data-lucide="nfc" style="width: 32px; height: 32px;"></i>
-                        </div>
+                <!-- Graphic Document Visual Representation -->
+                <div id="documentCard" class="document-card id-style">
+                    <div class="doc-photo-container">
+                        <img id="docPhoto" class="doc-photo" src="" alt="Photo" style="display: none;">
+                        <i id="docPhotoPlaceholder" data-lucide="user" style="width: 48px; height: 48px; color: rgba(255,255,255,0.2);"></i>
                     </div>
-                    <div class="card-id-display" id="visualCardId">00 00 00 00</div>
-                    <div class="card-footer-visual">
-                        <div>
-                            <div class="card-holder-label">نوع البطاقة</div>
-                            <div class="card-holder-value" id="visualCardType">NFC TAG</div>
+                    <div class="doc-details-grid">
+                        <div class="doc-header-row">
+                            <span class="field-label" id="docTypeLabel">بطاقة هوية رسمية</span>
+                            <span class="doc-type-badge" id="docTypeBadge">TD1</span>
                         </div>
-                        <div class="card-type-tag" id="visualCardTypeAbbr">NFC</div>
+                        <div class="doc-field" style="grid-column: span 2;">
+                            <span class="field-label">الاسم الكامل (Full Name)</span>
+                            <span class="field-value" id="docName" style="font-size: 1.15rem;">-</span>
+                        </div>
+                        <div class="doc-field">
+                            <span class="field-label">رقم الوثيقة (Document No)</span>
+                            <span class="field-value highlight-cyan" id="docNumber">-</span>
+                        </div>
+                        <div class="doc-field">
+                            <span class="field-label">الجنسية (Nationality)</span>
+                            <span class="field-value" id="docNationality" style="font-family: 'Outfit', sans-serif;">-</span>
+                        </div>
+                        <div class="doc-field">
+                            <span class="field-label">تاريخ الميلاد (Date of Birth)</span>
+                            <span class="field-value" id="docBirthDate" style="font-family: 'Outfit', sans-serif;">-</span>
+                        </div>
+                        <div class="doc-field">
+                            <span class="field-label">تاريخ الانتهاء (Date of Expiry)</span>
+                            <span class="field-value" id="docExpiryDate" style="font-family: 'Outfit', sans-serif;">-</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Technical Details Grid -->
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-label">معرف البطاقة الفريد (UID)</div>
-                        <div class="info-value" id="infoUid" style="font-family: 'Outfit', sans-serif; letter-spacing: 1px;">-</div>
+                <!-- Technical NFC Details -->
+                <h3 class="section-title" style="font-size: 1rem; margin-bottom: 1rem;"><i data-lucide="cpu" style="color: var(--accent-purple); width: 18px;"></i> تفاصيل تقنية وفك التشفير</h3>
+                <div class="tech-info-section">
+                    <div class="tech-card">
+                        <div class="tech-label">طريقة فك التشفير</div>
+                        <div class="tech-value" id="techMethod">-</div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">نوع التقنية</div>
-                        <div class="info-value" id="infoType">-</div>
+                    <div class="tech-card">
+                        <div class="tech-label">الجنس (Gender)</div>
+                        <div class="tech-value" id="techGender">-</div>
                     </div>
-                    <div class="info-item" style="grid-column: span 2;">
-                        <div class="info-label">التقنيات المدعومة (Supported Tech)</div>
-                        <div class="info-value tech-badge-container" id="infoTechList">
-                            <!-- Tech badges will be inserted here -->
-                        </div>
+                    <div class="tech-card">
+                        <div class="tech-label">تنسيق الصورة</div>
+                        <div class="tech-value" id="techPhotoFormat">-</div>
                     </div>
-                    <div class="info-item" style="grid-column: span 2;">
-                        <div class="info-label">بيانات السجل (NDEF Payload / Data)</div>
-                        <div class="info-value" id="infoPayload" style="color: var(--accent-cyan); font-family: monospace; white-space: pre-wrap; font-size: 0.95rem;">لا توجد بيانات مسجلة</div>
+                    
+                    <div class="tech-card" style="grid-column: span 3; display: flex; flex-direction: column;">
+                        <div class="tech-label">المنطقة المقروءة آلياً (Raw MRZ String)</div>
+                        <div class="tech-value mrz-raw" id="techRawMrz">-</div>
                     </div>
                 </div>
 
                 <div style="display: flex; justify-content: center; width: 100%;">
                     <button class="reset-btn" id="resetBtn">
-                        <i data-lucide="refresh-cw" style="width: 18px; height: 18px;"></i>
-                        قراءة بطاقة جديدة
+                        <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
+                        الاستعداد لقراءة وثيقة جديدة
                     </button>
                 </div>
             </div>
         </section>
 
-        <!-- Scan History Section -->
+        <!-- Verification History -->
         <section class="panel history-panel">
-            <h2 class="section-title"><i data-lucide="history" style="color: var(--accent-purple)"></i> سجل القراءات</h2>
-            <div id="noHistoryText" class="no-history">
-                <i data-lucide="inbox" style="width: 48px; height: 48px; stroke-width: 1.5; color: var(--card-border); margin-bottom: 0.5rem; display: block; margin-left: auto; margin-right: auto;"></i>
-                لا توجد بطاقات مقروءة حالياً
+            <h2 class="section-title"><i data-lucide="history" style="color: var(--accent-purple)"></i> سجل عمليات التحقق</h2>
+            <div id="noHistory" class="no-history">
+                <i data-lucide="folder-open" style="width: 48px; height: 48px; stroke-width: 1.5; color: var(--card-border); margin-bottom: 0.5rem; display: block; margin-left: auto; margin-right: auto;"></i>
+                لا توجد عمليات تحقق مسجلة
             </div>
             <div class="history-list" id="historyList">
-                <!-- History Items go here -->
+                <!-- Dynamic Items -->
             </div>
         </section>
     </main>
 
     <script>
-        // Initialize Lucide Icons
+        // Init icons
         lucide.createIcons();
 
         // WebSocket Setup
@@ -677,119 +804,161 @@
             };
 
             socket.onclose = () => {
-                console.log("WebSocket disconnected. Retrying in 3 seconds...");
+                console.log("WebSocket disconnected. Retrying...");
                 const statusDot = document.getElementById("statusDot");
                 const statusText = document.getElementById("statusText");
                 statusDot.classList.remove("connected");
                 statusText.innerText = "غير متصل بالخادم";
-                
-                // Retry connection
                 reconnectTimeout = setTimeout(connectWebSocket, 3000);
-            };
-
-            socket.onerror = (error) => {
-                console.error("WebSocket error:", error);
             };
 
             socket.onmessage = (event) => {
                 try {
                     const message = JSON.parse(event.data);
-                    if (message.event === "nfc_scan") {
-                        handleNfcScan(message.data);
+                    if (message.event === "biometric_scan") {
+                        handleBiometricScan(message.data);
                     }
                 } catch (e) {
-                    console.error("Error parsing websocket message:", e);
+                    console.error("Error parsing socket message:", e);
                 }
             };
         }
 
-        // Format ID for representation (e.g. 04:A3:F8 -> 04 A3 F8)
-        function formatCardId(id) {
-            if (!id) return "UNKNOWN";
-            // Replace colons or dashes with space, uppercase everything
-            return id.replace(/[:\-]/g, ' ').toUpperCase();
+        function playBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = "sine";
+                
+                // Beep 1
+                osc.frequency.setValueAtTime(660, audioCtx.currentTime); // E5
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+                
+                // Beep 2
+                setTimeout(() => {
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.type = "sine";
+                    osc2.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                    gain2.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    osc2.start();
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                    setTimeout(() => osc2.stop(), 300);
+                }, 100);
+
+                setTimeout(() => osc.stop(), 250);
+            } catch (e) {
+                console.log("Beep audio blocked or failed:", e);
+            }
         }
 
-        function handleNfcScan(data) {
-            // Play a soft notification sound if wanted (Web Audio API)
-            playScanSound();
-
-            // Set visual card details
-            document.getElementById("visualCardId").innerText = formatCardId(data.id);
-            document.getElementById("visualCardType").innerText = data.cardType || "NFC Tag";
-            document.getElementById("visualCardTypeAbbr").innerText = (data.cardType || "NFC").substring(0, 8).toUpperCase();
-            
-            // Set details info
-            document.getElementById("infoUid").innerText = data.id.toUpperCase();
-            document.getElementById("infoType").innerText = data.cardType || "Unknown";
-            
-            // Tech list badges
-            const techContainer = document.getElementById("infoTechList");
-            techContainer.innerHTML = "";
-            if (data.techList && data.techList.length > 0) {
-                data.techList.forEach(tech => {
-                    // Extract last part of java class if it's full path
-                    const parts = tech.split('.');
-                    const shortTech = parts[parts.length - 1];
-                    const badge = document.createElement("span");
-                    badge.className = "tech-badge";
-                    badge.innerText = shortTech;
-                    techContainer.appendChild(badge);
-                });
-            } else {
-                techContainer.innerHTML = '<span class="tech-badge">Generic NFC</span>';
-            }
-
-            // Payload
-            const payloadEl = document.getElementById("infoPayload");
-            if (data.payload) {
-                payloadEl.innerText = data.payload;
-            } else {
-                payloadEl.innerText = "لا توجد بيانات مسجلة (فقط UID)";
-            }
-
-            // Hide wait view, show details
-            document.getElementById("scannerWaitState").style.display = "none";
-            document.getElementById("scannerDetailState").style.display = "block";
+        function handleBiometricScan(data) {
+            playBeep();
+            displayDocument(data);
 
             // Add to history
-            const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            data.time = timestamp;
-            scansHistory.unshift(data); // Add to beginning
-
+            scansHistory.unshift(data);
             updateHistoryUI();
         }
 
-        function updateHistoryUI() {
-            const noHistoryText = document.getElementById("noHistoryText");
-            const historyList = document.getElementById("historyList");
+        function displayDocument(data) {
+            const info = data.info || {};
             
+            // Set details text
+            document.getElementById("docName").innerText = info.fullName || "NAME UNKNOWN";
+            document.getElementById("docNumber").innerText = info.documentNumber || "-";
+            document.getElementById("docNationality").innerText = info.nationality || "-";
+            document.getElementById("docBirthDate").innerText = info.birthDate || "-";
+            document.getElementById("docExpiryDate").innerText = info.expiryDate || "-";
+
+            // Tech details
+            document.getElementById("techMethod").innerText = data.method === "CAN" ? "PACE (عبر رقم CAN)" : "BAC (عبر الـ MRZ)";
+            document.getElementById("techGender").innerText = info.gender === "Male" ? "ذكر" : info.gender === "Female" ? "أنثى" : "-";
+            document.getElementById("techPhotoFormat").innerText = data.photoMime ? data.photoMime.replace("image/", "").toUpperCase() : "مجهول";
+            document.getElementById("techRawMrz").innerText = info.raw || "-";
+
+            // Image load
+            const imgEl = document.getElementById("docPhoto");
+            const placeholderEl = document.getElementById("docPhotoPlaceholder");
+            if (data.photo) {
+                imgEl.src = `data:${data.photoMime};base64,${data.photo}`;
+                imgEl.style.display = "block";
+                placeholderEl.style.display = "none";
+            } else {
+                imgEl.style.display = "none";
+                placeholderEl.style.display = "block";
+            }
+
+            // Card Style (Passport vs ID)
+            const cardEl = document.getElementById("documentCard");
+            const typeLabelEl = document.getElementById("docTypeLabel");
+            const typeBadgeEl = document.getElementById("docTypeBadge");
+            const numberEl = document.getElementById("docNumber");
+
+            if (info.documentType && info.documentType.includes("Passport")) {
+                cardEl.className = "document-card passport-style";
+                typeLabelEl.innerText = "جواز سفر بيومتري";
+                typeBadgeEl.innerText = "TD3 (Passport)";
+                numberEl.className = "field-value highlight-gold";
+            } else {
+                cardEl.className = "document-card id-style";
+                typeLabelEl.innerText = "بطاقة هوية وطنية بيومترية";
+                typeBadgeEl.innerText = "TD1 (National ID)";
+                numberEl.className = "field-value highlight-cyan";
+            }
+
+            // Show details screen, hide wait screen
+            document.getElementById("waitState").style.display = "none";
+            document.getElementById("detailState").style.display = "block";
+        }
+
+        function updateHistoryUI() {
+            const noHistoryEl = document.getElementById("noHistory");
+            const historyList = document.getElementById("historyList");
+
             if (scansHistory.length === 0) {
-                noHistoryText.style.display = "block";
+                noHistoryEl.style.display = "block";
                 historyList.innerHTML = "";
                 return;
             }
 
-            noHistoryText.style.display = "none";
+            noHistoryEl.style.display = "none";
             historyList.innerHTML = "";
 
             scansHistory.forEach((item, index) => {
+                const info = item.info || {};
                 const div = document.createElement("div");
                 div.className = "history-item";
                 div.onclick = () => showHistoryItemDetails(index);
                 
+                const isPassport = info.documentType && info.documentType.includes("Passport");
+                const typeClass = isPassport ? "passport" : "id";
+                const typeText = isPassport ? "جواز سفر" : "بطاقة هوية";
+
+                const avatarContent = item.photo 
+                    ? `<img src="data:${item.photoMime};base64,${item.photo}" alt="Avatar">`
+                    : `<i data-lucide="user"></i>`;
+
                 div.innerHTML = `
-                    <div class="history-item-left">
-                        <div class="history-item-icon">
-                            <i data-lucide="credit-card"></i>
+                    <div class="history-left">
+                        <div class="history-avatar">
+                            ${avatarContent}
                         </div>
                         <div>
-                            <div class="history-item-id">${item.id.toUpperCase()}</div>
-                            <div class="history-item-time">${item.time}</div>
+                            <div class="history-name">${info.fullName || "مستند مجهول"}</div>
+                            <div class="history-doc-num">${info.documentNumber || "-"}</div>
                         </div>
                     </div>
-                    <div class="history-item-right">
-                        <span class="history-item-type">${item.cardType || "NFC"}</span>
+                    <div class="history-right">
+                        <span class="history-time">${item.timestamp}</span>
+                        <span class="history-type-tag ${typeClass}">${typeText}</span>
                     </div>
                 `;
                 historyList.appendChild(div);
@@ -798,90 +967,15 @@
         }
 
         function showHistoryItemDetails(index) {
-            const item = scansHistory[index];
-            
-            document.getElementById("visualCardId").innerText = formatCardId(item.id);
-            document.getElementById("visualCardType").innerText = item.cardType || "NFC Tag";
-            document.getElementById("visualCardTypeAbbr").innerText = (item.cardType || "NFC").substring(0, 8).toUpperCase();
-            
-            document.getElementById("infoUid").innerText = item.id.toUpperCase();
-            document.getElementById("infoType").innerText = item.cardType || "Unknown";
-            
-            const techContainer = document.getElementById("infoTechList");
-            techContainer.innerHTML = "";
-            if (item.techList && item.techList.length > 0) {
-                item.techList.forEach(tech => {
-                    const parts = tech.split('.');
-                    const shortTech = parts[parts.length - 1];
-                    const badge = document.createElement("span");
-                    badge.className = "tech-badge";
-                    badge.innerText = shortTech;
-                    techContainer.appendChild(badge);
-                });
-            } else {
-                techContainer.innerHTML = '<span class="tech-badge">Generic NFC</span>';
-            }
-
-            const payloadEl = document.getElementById("infoPayload");
-            payloadEl.innerText = item.payload || "لا توجد بيانات مسجلة (فقط UID)";
-
-            document.getElementById("scannerWaitState").style.display = "none";
-            document.getElementById("scannerDetailState").style.display = "block";
+            displayDocument(scansHistory[index]);
         }
 
-        // Web Audio API for sound effect on scan
-        let audioCtx;
-        function playScanSound() {
-            try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.type = "sine";
-                // Quick double beep
-                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                
-                osc.start();
-                
-                // End first beep
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-                
-                // Start second beep
-                setTimeout(() => {
-                    const osc2 = audioCtx.createOscillator();
-                    const gain2 = audioCtx.createGain();
-                    osc2.connect(gain2);
-                    gain2.connect(audioCtx.destination);
-                    osc2.type = "sine";
-                    osc2.frequency.setValueAtTime(1046.50, audioCtx.currentTime); // C6
-                    gain2.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    osc2.start();
-                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-                    setTimeout(() => osc2.stop(), 250);
-                }, 100);
-
-                setTimeout(() => {
-                    osc.stop();
-                }, 200);
-                
-            } catch (e) {
-                console.log("Audio play failed or blocked:", e);
-            }
-        }
-
-        // Reset Button Action
         document.getElementById("resetBtn").addEventListener("click", () => {
-            document.getElementById("scannerWaitState").style.display = "flex";
-            document.getElementById("scannerDetailState").style.display = "none";
+            document.getElementById("waitState").style.display = "flex";
+            document.getElementById("detailState").style.display = "none";
         });
 
-        // Start WebSocket connection
+        // Run Websocket
         connectWebSocket();
     </script>
 </body>
