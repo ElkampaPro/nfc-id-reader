@@ -37,11 +37,11 @@ jobs:
           cd mobile-app
           npx expo prebuild --platform android --no-install
 
-      - name: Build Android App (Debug APK)
+      - name: Build Android App (Debug APK with Bundle)
         run: |
           cd mobile-app/android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug -PbundleInDebug=true --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
