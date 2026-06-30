@@ -5,6 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#050508"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nfc.sender",
