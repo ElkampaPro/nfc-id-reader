@@ -88,7 +88,6 @@ function padISO9797(dataHex) {
 
 // ISO 9797-1 MAC Algorithm 3 (Retail MAC) using 3DES
 function calculateRetailMAC(dataHex, keyHex) {
-  // Key is 16 bytes (Ka + Kb)
   const Ka = keyHex.substring(0, 16);
   const Kb = keyHex.substring(16, 32);
   
@@ -97,19 +96,15 @@ function calculateRetailMAC(dataHex, keyHex) {
     blocks.push(dataHex.substring(i, i + 16));
   }
   
-  // Single DES CBC on Ka
   let currentBlock = "0000000000000000";
   for (let block of blocks) {
-    // XOR
     let xored = "";
     for (let j = 0; j < 16; j += 2) {
       let b1 = parseInt(currentBlock.substring(j, j + 2), 16);
       let b2 = parseInt(block.substring(j, j + 2), 16);
       xored += (b1 ^ b2).toString(16).padStart(2, '0');
     }
-    // Encrypt with DES Ka
-    // CryptoJS TripleDES with single 8-byte key acts as Single DES
-    const desKey = hexToWords(Ka + Ka + Ka); // Repeat to form 3DES key
+    const desKey = hexToWords(Ka + Ka + Ka);
     const enc = CryptoJS.TripleDES.encrypt(hexToWords(xored), desKey, {
       mode: CryptoJS.mode.ECB,
       padding: CryptoJS.pad.NoPadding
@@ -117,7 +112,6 @@ function calculateRetailMAC(dataHex, keyHex) {
     currentBlock = wordsToHex(enc.ciphertext).substring(0, 16);
   }
   
-  // Decrypt with Kb, then Encrypt with Ka
   const keyKb = hexToWords(Kb + Kb + Kb);
   const dec = CryptoJS.TripleDES.decrypt({ ciphertext: hexToWords(currentBlock) }, keyKb, {
     mode: CryptoJS.mode.ECB,
@@ -152,7 +146,7 @@ function bytesToHex(byteArray) {
 // Helper to convert Hex to byte array
 function hexToBytes(hex) {
   let bytes = [];
-  for (let c = 0; i = 0, c < hex.length; c += 2, i++) {
+  for (let c = 0, i = 0; c < hex.length; c += 2, i++) {
     bytes[i] = parseInt(hex.substring(c, c + 2), 16);
   }
   return bytes;
@@ -167,14 +161,13 @@ export default function App() {
 
   // Biometric details fields
   const [docNumber, setDocNumber] = useState('');
-  const [dob, setDob] = useState(''); // Format: YYMMDD
-  const [expiry, setExpiry] = useState(''); // Format: YYMMDD
+  const [dob, setDob] = useState(''); 
+  const [expiry, setExpiry] = useState(''); 
   
   // CAN Number (fallback / alternate mode)
   const [canNumber, setCanNumber] = useState('');
-  const [useCanMode, setUseCanMode] = useState(false); // True = CAN, False = MRZ
+  const [useCanMode, setUseCanMode] = useState(false); 
 
-  // Load saved settings
   useEffect(() => {
     async function loadSettings() {
       try {
@@ -229,20 +222,14 @@ export default function App() {
     }
   };
 
-  // Perform ICAO BAC Handshake and Read Passport Files
   const scanBiometricCard = async () => {
     if (!isNfcSupported) return;
 
-    // Validate inputs
-    let mrzString = "";
     if (useCanMode) {
       if (canNumber.length !== 6 || isNaN(canNumber)) {
         setStatus('يرجى إدخال رقم CAN صحيح مكون من 6 أرقام');
         return;
       }
-      // Note: Full PACE handshake is highly complex. For maximum compatibility with ICAO 9303,
-      // we utilize BAC as the primary channel. If the card only supports PACE/CAN, 
-      // the user must input the MRZ details (DOB/Expiry/DocNum) to perform BAC.
       setStatus('وضع الـ CAN يتطلب بروتوكول PACE المعقد. يرجى استخدام وضع MRZ لمصادقة بطاقات السفر.');
       return;
     } else {
@@ -256,20 +243,15 @@ export default function App() {
       setIsLoading(true);
       setStatus('جاري تفعيل الـ NFC... قرب البطاقة من الهاتف');
 
-      // Request IsoDep technology (needed for passports and smart ID cards)
       await NfcManager.requestTechnology([NfcTech.IsoDep]);
-      
       setStatus('تم اكتشاف البطاقة! جاري الاتصال المباشر...');
 
       // 1. SELECT eMRTD Applet
-      // AID: A0 00 00 02 47 10 01
       const selectAppletApdu = [0x00, 0xA4, 0x04, 0x0C, 0x07, 0xA0, 0x00, 0x00, 0x02, 0x47, 0x10, 0x01];
-      let selectResp = await NfcManager.sendCommandAPDUSOP(selectAppletApdu);
+      let selectResp = await NfcManager.transceive(selectAppletApdu);
       let selectRespHex = bytesToHex(selectResp);
       
-      // Check if eMRTD applet selected successfully (should end with 9000)
       if (!selectRespHex.endsWith("9000")) {
-        // Fallback: This is not a biometric document, or it is a simple RFID tag
         setStatus('هذه ليست وثيقة بيومترية متوافقة. جاري قراءة رقم التعريف UID كبديل...');
         const tag = await NfcManager.getTag();
         await transmitSimpleUIDToPC(tag);
@@ -285,11 +267,9 @@ export default function App() {
       const c_exp = getCheckDigit(expiry);
       const mrzInfo = `${doc}${c_doc}${dob}${c_dob}${expiry}${c_exp}`;
 
-      // Derive K_enc and K_mac
       const mrzHash = CryptoJS.SHA1(CryptoJS.enc.Utf8.parse(mrzInfo));
       const kSeed = mrzHash.toString().substring(0, 32);
       
-      // Derive Ka/Kb for Enc & Mac
       const dEnc = CryptoJS.enc.Hex.parse(kSeed + "00000001");
       const dMac = CryptoJS.enc.Hex.parse(kSeed + "00000002");
       const kEnc = CryptoJS.enc.Hex.parse(CryptoJS.SHA1(dEnc).toString()).toString().substring(0, 32);
@@ -297,35 +277,29 @@ export default function App() {
 
       // 2. GET CHALLENGE to retrieve RND_IC
       const getChallengeApdu = [0x00, 0x84, 0x00, 0x00, 0x08];
-      let challengeResp = await NfcManager.sendCommandAPDUSOP(getChallengeApdu);
+      let challengeResp = await NfcManager.transceive(getChallengeApdu);
       let challengeHex = bytesToHex(challengeResp);
       
       if (!challengeHex.endsWith("9000") || challengeResp.length < 10) {
         throw new Error("Failed to get challenge from chip.");
       }
       
-      const rndIc = challengeHex.substring(0, 16); // 8 bytes RND_IC
+      const rndIc = challengeHex.substring(0, 16); 
       
       // 3. Generate random values for Terminal
-      const rndIfd = "1234567890ABCDEF"; // 8 bytes random
-      const kIfd = "AABBCCDDEEFF00112233445566778899"; // 16 bytes random key seed
+      const rndIfd = CryptoJS.lib.WordArray.random(8).toString(CryptoJS.enc.Hex).toUpperCase();
+      const kIfd = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex).toUpperCase();
       
-      // S = RND_IFD + RND_IC + K_IFD
       const S = rndIfd + rndIc + kIfd;
-      
-      // Encrypt S with K_enc to get E_IFD
       const eIfd = encrypt3DES(S, kEnc);
-      
-      // Calculate MAC M_IFD over E_IFD using K_mac
       const paddedEIfd = padISO9797(eIfd);
       const mIfd = calculateRetailMAC(paddedEIfd, kMac);
       
       // 4. EXTERNAL AUTHENTICATE command
-      // APDU Header: 00 82 00 00 28 (length is 40 bytes)
       const extAuthPayload = hexToBytes(eIfd + mIfd);
       const extAuthApdu = [0x00, 0x82, 0x00, 0x00, 0x28, ...extAuthPayload];
       
-      let authResp = await NfcManager.sendCommandAPDUSOP(extAuthApdu);
+      let authResp = await NfcManager.transceive(extAuthApdu);
       let authRespHex = bytesToHex(authResp);
       
       if (!authRespHex.endsWith("9000")) {
@@ -334,72 +308,51 @@ export default function App() {
       
       setStatus('نجحت المصادقة! جاري توليد قنوات الاتصال الآمنة...');
 
-      // Extract E_IC and M_IC from response
-      const eIc = authRespHex.substring(0, 64); // first 32 bytes
-      
-      // Decrypt E_IC using K_enc
+      const eIc = authRespHex.substring(0, 64);
       const decryptedEIC = decrypt3DES(eIc, kEnc);
-      const kIc = decryptedEIC.substring(32, 64); // K_IC is the last 16 bytes
-      
-      // Compute final K_seed = K_IFD XOR K_IC
+      const kIc = decryptedEIC.substring(32, 64); 
       const finalKSeed = xorHex(kIfd, kIc);
       
-      // Derive Secure Messaging Keys: K_SM_ENC & K_SM_MAC
       const dEncSM = CryptoJS.enc.Hex.parse(finalKSeed + "00000001");
       const dMacSM = CryptoJS.enc.Hex.parse(finalKSeed + "00000002");
       const kSmEnc = CryptoJS.enc.Hex.parse(CryptoJS.SHA1(dEncSM).toString()).toString().substring(0, 32);
       const kSmMac = CryptoJS.enc.Hex.parse(CryptoJS.SHA1(dMacSM).toString()).toString().substring(0, 32);
       
-      // Calculate initial Send Sequence Counter (SSC)
-      // SSC = last 4 bytes of RND_IC + last 4 bytes of RND_IFD
       let ssc = rndIc.substring(8, 16) + rndIfd.substring(8, 16);
       
       setStatus('تم إنشاء قناة مشفرة. جاري قراءة البيانات الشخصية (DG1)...');
 
-      // Helper to increment SSC
       function incrementSSC() {
         let val = BigInt("0x" + ssc);
         val = val + 1n;
         ssc = val.toString(16).toUpperCase().padStart(16, '0');
       }
 
-      // Helper to build Secure Messaging APDU (wrap)
       function wrapAPDU(apduHeader, dataHex = "") {
         incrementSSC();
         
         let do87 = "";
         if (dataHex.length > 0) {
-          // Encrypt data
           let paddedData = padISO9797(dataHex);
-          // In SM, the encryption IV is derived by encrypting the SSC with K_SM_ENC
           let iv = encrypt3DES(ssc, kSmEnc);
           let encryptedData = encrypt3DES(paddedData, kSmEnc, iv);
           
-          // Build DO87 tag: 87 [Length] 01 [EncryptedData] (01 indicates padding method 2)
           let content = "01" + encryptedData;
           let lenHex = (content.length / 2).toString(16).padStart(2, '0');
-          // If length is > 127 bytes, handle ASN.1 long form
           if (content.length / 2 > 127) {
             lenHex = "81" + lenHex;
           }
           do87 = "87" + lenHex + content;
         }
         
-        // Build DO97 (Le tag): 97 01 [Expected Length]
-        let do97 = "970100"; // request maximum length
-        
-        // Construct M (Data over which MAC is calculated)
-        // M = SSC + APDU Header (masked) + DO87 + DO97
+        let do97 = "970100"; 
         let maskedHeader = apduHeader.substring(0, 2) + "B0" + apduHeader.substring(4, 8) + "00";
         let m = ssc + maskedHeader + do87 + do97;
         let paddedM = padISO9797(m);
         
-        // Calculate MAC
         let mac = calculateRetailMAC(paddedM, kSmMac);
         let do8e = "8E08" + mac;
         
-        // Final Wrapped APDU
-        // CLA is changed to 0C (indicates secure messaging)
         let finalData = do87 + do97 + do8e;
         let finalLen = (finalData.length / 2).toString(16).padStart(2, '0');
         let finalApdu = "0CB0" + apduHeader.substring(4, 8) + finalLen + finalData;
@@ -407,22 +360,17 @@ export default function App() {
         return hexToBytes(finalApdu);
       }
 
-      // Helper to parse Secure Messaging Response (unwrap)
       function unwrapResponse(respHex) {
-        // Response ends with 9000 or other status
         let status = respHex.substring(respHex.length - 4);
         if (status !== "9000") {
           return { status, data: "" };
         }
         
-        // Parse DO87 (contains encrypted data)
         let dataStart = respHex.indexOf("87");
         if (dataStart === -1) {
-          // Just status, no encrypted payload
           return { status, data: "" };
         }
         
-        // Read length
         let lenByte = parseInt(respHex.substring(dataStart + 2, dataStart + 4), 16);
         let contentIdx = dataStart + 4;
         if (lenByte === 129 || lenByte === 0x81) {
@@ -430,15 +378,12 @@ export default function App() {
           contentIdx = dataStart + 6;
         }
         
-        // Skip padding indicator (01)
         let encData = respHex.substring(contentIdx + 2, contentIdx + lenByte * 2);
         
-        // Decrypt
         incrementSSC();
         let iv = encrypt3DES(ssc, kSmEnc);
         let decrypted = decrypt3DES(encData, kSmEnc, iv);
         
-        // Remove padding (find last 80 and strip)
         let last80 = decrypted.lastIndexOf("80");
         if (last80 !== -1) {
           decrypted = decrypted.substring(0, last80);
@@ -448,15 +393,11 @@ export default function App() {
       }
 
       // 5. READ EF.DG1 (File ID: 01 01)
-      // Select file: 00 A4 02 0C 02 01 01
-      // For simplicity, we can read files by constructing standard wrapped read commands directly.
-      // In ICAO SM, we select file first.
       const selectDg1Apdu = wrapAPDU("00A4020C020101");
-      let selectDg1Resp = await NfcManager.sendCommandAPDUSOP(selectDg1Apdu);
+      await NfcManager.transceive(selectDg1Apdu);
       
-      // Read binary in blocks (Read first 256 bytes)
-      const readDg1Apdu = wrapAPDU("00B0000000"); // read 256 bytes from offset 0
-      let readDg1Resp = await NfcManager.sendCommandAPDUSOP(readDg1Apdu);
+      const readDg1Apdu = wrapAPDU("00B0000000"); 
+      let readDg1Resp = await NfcManager.transceive(readDg1Apdu);
       let unwrappedDg1 = unwrapResponse(bytesToHex(readDg1Resp));
 
       if (unwrappedDg1.status !== "9000" || !unwrappedDg1.data) {
@@ -469,16 +410,14 @@ export default function App() {
 
       // 6. READ EF.DG2 (File ID: 01 02)
       const selectDg2Apdu = wrapAPDU("00A4020C020102");
-      await NfcManager.sendCommandAPDUSOP(selectDg2Apdu);
+      await NfcManager.transceive(selectDg2Apdu);
 
-      // Read DG2 length first (Read first 32 bytes to get file size)
       const readDg2LengthApdu = wrapAPDU("00B0000020");
-      let readDg2LenResp = await NfcManager.sendCommandAPDUSOP(readDg2LengthApdu);
+      let readDg2LenResp = await NfcManager.transceive(readDg2LengthApdu);
       let unwrappedDg2Len = unwrapResponse(bytesToHex(readDg2LenResp));
       
-      let totalDg2Length = 8000; // Default fallback to read 8KB if length parsing fails
+      let totalDg2Length = 8000; 
       if (unwrappedDg2Len.status === "9000" && unwrappedDg2Len.data.length >= 8) {
-        // Parse ASN.1 length of DG2 template (usually starts with 75 [length])
         let tag75 = unwrappedDg2Len.data.substring(0, 2);
         if (tag75 === "75") {
           let lenByte = parseInt(unwrappedDg2Len.data.substring(2, 4), 16);
@@ -493,7 +432,6 @@ export default function App() {
       
       setStatus(`جاري تحميل الصورة (${Math.round(totalDg2Length / 1024)} KB)...`);
       
-      // Read entire DG2 file in chunks (max 220 bytes per read in Secure Messaging)
       let dg2Hex = "";
       let offset = 0;
       while (offset < totalDg2Length) {
@@ -502,7 +440,7 @@ export default function App() {
         let lenHex = readLen.toString(16).padStart(2, '0');
         
         let chunkApdu = wrapAPDU(`00B0${offsetHex}${lenHex}`);
-        let chunkResp = await NfcManager.sendCommandAPDUSOP(chunkApdu);
+        let chunkResp = await NfcManager.transceive(chunkApdu);
         let unwrappedChunk = unwrapResponse(bytesToHex(chunkResp));
         
         if (unwrappedChunk.status !== "9000") {
@@ -515,10 +453,8 @@ export default function App() {
       }
 
       const dg2Base64 = base64EncodeHex(dg2Hex);
-      
-      setStatus('اكتمل القراءة بالكامل! جاري إرسال البيانات للكمبيوتر...');
+      setStatus('اكتملت القراءة بالكامل! جاري إرسال البيانات للكمبيوتر...');
 
-      // 7. Transmit biological files to PC server
       await transmitBiometricDataToPC({
         dg1: dg1Base64,
         dg2: dg2Base64,
@@ -535,7 +471,6 @@ export default function App() {
     }
   };
 
-  // Helper to convert HEX to Base64
   const base64EncodeHex = (hex) => {
     let raw = hexToWords(hex);
     return CryptoJS.enc.Base64.stringify(raw);
@@ -567,7 +502,6 @@ export default function App() {
   };
 
   const transmitSimpleUIDToPC = async (tag) => {
-    // Falls back to sending simple tag UID to local server
     try {
       const payload = {
         dg1: base64EncodeHex(bytesToHex(tag.id ? hexToBytes(tag.id) : [0])),
@@ -597,7 +531,7 @@ export default function App() {
         
         <View style={styles.header}>
           <Text style={styles.headerTitle}>ماسح الهويات والجوازات بيومتري 🛂</Text>
-          <Text style={styles.headerSubtitle}>قراء فك تشفير مستندات ICAO 9303 لاسلكياً</Text>
+          <Text style={styles.headerSubtitle}>قراءة فك تشفير مستندات ICAO 9303 لاسلكياً</Text>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
