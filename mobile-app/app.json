@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "NFC Sender",
+    "slug": "nfc-sender",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nfc.sender",
+      "infoPlist": {
+        "NFCReaderUsageDescription": "Allow this app to scan NFC tags to transmit to computer."
+      }
+    },
+    "android": {
+      "package": "com.nfc.sender",
+      "permissions": [
+        "android.permission.NFC"
+      ]
+    },
+    "plugins": [
+      [
+        "react-native-nfc-manager",
+        {
+          "nfcPermissionString": "Allow NFC Sender to scan NFC cards."
+        }
+      ]
+    ]
+  }
+}
